@@ -1,23 +1,56 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+
+
+/* main.js: Manages the main application logic, including window creation, settings management, and inter-process communication.
+renderer.js: Handles the frontend logic for the meeting minutes form, including form handling, saving, and loading.
+index.html: The main HTML file for the application, containing the form structure and menu.
+settings.html: The settings page HTML file, with a form to manage application settings.
+splash.html: The splash screen HTML file shown at the application startup.
+settings.json: Configuration file for storing application settings. */
+
+
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-let isFormSaved = false;
-let isQuitting = false;
+let isFormSaved = false; // Flag to track if form is saved
+let isQuitting = false; // Flag to track if the app is quitting
+let mainWindow; // Main application window
+let splashWindow; // Splash screen window
 
+// Load settings
+let settings = {};
+const settingsPath = path.join(__dirname, 'settings.json');
+if (fs.existsSync(settingsPath)) {
+  settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+} else {
+  settings = { pathToMinutes: '.' };
+}
+
+// Handle form save state messages from renderer process
 ipcMain.on('form-save-state', (event, state) => {
   isFormSaved = state;
 });
 
+// Load meeting minutes from the specified path
 ipcMain.on('load-minutes', (event) => {
   const mainWindow = BrowserWindow.getFocusedWindow();
-  const files = fs.readdirSync(__dirname).filter(file => file.endsWith('.txt'));
+  const minutesPath = settings.pathToMinutes || '.';
+  if (!fs.existsSync(minutesPath)) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      buttons: ['OK'],
+      title: 'Error',
+      message: `The path ${minutesPath} does not exist. Please update your settings.`
+    });
+    return;
+  }
+  const files = fs.readdirSync(minutesPath).filter(file => file.endsWith('.txt'));
   if (files.length === 0) {
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       buttons: ['OK'],
       title: 'No Files',
-      message: 'No .txt files found in the root directory.'
+      message: 'No .txt files found in the specified directory.'
     });
     return;
   }
@@ -31,13 +64,36 @@ ipcMain.on('load-minutes', (event) => {
 
   if (fileSelection >= 0 && fileSelection < files.length) {
     const selectedFile = files[fileSelection];
-    const fileContent = fs.readFileSync(path.join(__dirname, selectedFile), 'utf-8');
+    const fileContent = fs.readFileSync(path.join(minutesPath, selectedFile), 'utf-8');
     event.sender.send('display-minutes', fileContent);
   }
 });
 
-function createWindow () {
-  const mainWindow = new BrowserWindow({
+// Handle application exit request from renderer process
+ipcMain.on('exit-application', () => {
+  isQuitting = true;
+  app.quit();
+});
+
+// Handle settings window request from renderer process
+ipcMain.on('open-settings', () => {
+  createSettingsWindow();
+});
+
+// Load settings to renderer process
+ipcMain.on('request-settings', (event) => {
+  event.sender.send('load-settings', settings);
+});
+
+// Save settings from renderer process
+ipcMain.on('save-settings', (event, newSettings) => {
+  settings = newSettings;
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+});
+
+// Create main application window
+function createMainWindow() {
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     title: "Minutiae",
@@ -45,11 +101,15 @@ function createWindow () {
       preload: path.join(__dirname, 'renderer.js'),
       nodeIntegration: true,
       contextIsolation: false
-    }
+    },
+    autoHideMenuBar: true
   });
 
+  mainWindow.setMenu(null); // Hide the menu bar
   mainWindow.loadFile('index.html');
+  mainWindow.removeMenu();
 
+  // Handle window close event to check for unsaved changes
   mainWindow.on('close', (e) => {
     if (!isFormSaved && !isQuitting) {
       e.preventDefault();
@@ -72,20 +132,62 @@ function createWindow () {
   });
 }
 
-app.on('ready', createWindow);
+// Create settings window
+function createSettingsWindow() {
+  const settingsWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    title: 'Settings',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    autoHideMenuBar: true
+  });
 
+  settingsWindow.setMenu(null); // Hide the menu bar
+  settingsWindow.loadFile('settings.html');
+}
+
+// Create splash screen window
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+
+  splashWindow.loadFile('splash.html');
+
+  // Close splash screen and open main window after 4 seconds
+  setTimeout(() => {
+    splashWindow.close();
+    createMainWindow();
+  }, 4000);
+}
+
+// App ready event to create splash window
+app.on('ready', createSplashWindow);
+
+// Handle all windows closed event
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
+// Handle app activation (macOS specific)
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createMainWindow();
   }
 });
 
+// Handle app before quit event to manage quitting state
 app.on('before-quit', (event) => {
   if (!isQuitting) {
     event.preventDefault();

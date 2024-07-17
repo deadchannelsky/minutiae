@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minutiae Meeting Minutes Helper</title>
+  <title>Minutiae: The Simple Meeting Minutes Helper</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #a2c1e0;
+      background-color: #646668;
     }
     .ribbon {
       background-color: #f0f0f0;
@@ -70,7 +70,8 @@
       <div id="fileMenu" class="submenu">
         <div class="submenu-item" onclick="saveMinutes()">Save Minutes</div>
         <div class="submenu-item" onclick="loadMinutes()">Load Minutes</div>
-        <div class="submenu-item" onclick="exitMinutes()">Exit Minutes</div>
+        <div class="submenu-item" onclick="exitApplication()">Exit Minutiae</div>
+        <div class="submenu-item" onclick="openSettings()">Settings</div>
       </div>
     </div>
     <div class="menu-item" onclick="toggleMenu('activitiesMenu')">Activities
@@ -196,39 +197,51 @@
     <script src="renderer.js"></script>
   </div>
   <script>
+    // Toggle the display of the submenu
     function toggleMenu(menuId) {
       const menu = document.getElementById(menuId);
       menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     }
 
+    // Submit the minutes form to save the data
     function saveMinutes() {
       document.getElementById('minutesForm').submit();
     }
 
+    // Load the minutes from the specified path
     function loadMinutes() {
       ipcRenderer.send('load-minutes');
     }
 
-    function exitMinutes() {
-      alert('Exit Minutes clicked');
-      // Implement exit functionality
+    // Exit the application
+    function exitApplication() {
+      ipcRenderer.send('exit-application');
     }
 
+    // Open the settings window
+    function openSettings() {
+      ipcRenderer.send('open-settings');
+    }
+
+    // Placeholder for Activity 1 functionality
     function activity1() {
       alert('Activity 1 clicked');
       // Implement Activity 1 functionality
     }
 
+    // Placeholder for Activity 2 functionality
     function activity2() {
       alert('Activity 2 clicked');
       // Implement Activity 2 functionality
     }
 
+    // Placeholder for Help Document functionality
     function helpDocument() {
       alert('Help Document clicked');
       // Implement Help Document functionality
     }
 
+    // Close all submenus when clicking outside
     document.addEventListener('click', (event) => {
       const isClickInsideMenu = event.target.closest('.menu-item');
       if (!isClickInsideMenu) {

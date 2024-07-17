@@ -2,8 +2,18 @@ const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-let isFormSaved = false;
+// Load settings from settings file
+let settings = {};
+const settingsPath = path.join(__dirname, 'settings.json');
+if (fs.existsSync(settingsPath)) {
+  settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+} else {
+  settings = { pathToMinutes: '.' };
+}
 
+let isFormSaved = false; // Flag to track if form is saved
+
+// Create old business section for the meeting minutes form
 function createOldBusinessSection() {
   const section = document.createElement('div');
   section.classList.add('subsection');
@@ -16,6 +26,7 @@ function createOldBusinessSection() {
   return section;
 }
 
+// Create new business section for the meeting minutes form
 function createNewBusinessSection() {
   const section = document.createElement('div');
   section.classList.add('subsection');
@@ -28,6 +39,7 @@ function createNewBusinessSection() {
   return section;
 }
 
+// Create motion section for the meeting minutes form
 function createMotionSection() {
   const section = document.createElement('div');
   section.classList.add('subsection');
@@ -51,6 +63,7 @@ function createMotionSection() {
   return section;
 }
 
+// DOM content loaded event listener to set up form event handlers
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addOldBusiness').addEventListener('click', () => {
     document.getElementById('oldBusinessContainer').appendChild(createOldBusinessSection());
@@ -76,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// Save the meeting minutes form data
 function saveForm() {
   const date = document.getElementById('date').value;
   const startTime = document.getElementById('startTime').value;
@@ -141,8 +155,9 @@ function saveForm() {
 
   const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
   const currentTime = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
-  const filePath = path.join(__dirname, `${currentDate}${currentTime}RCCMinutes.txt`);
+  const filePath = path.join(settings.pathToMinutes, `${currentDate}${currentTime}RCCMinutes.txt`);
 
+  // Save the form data to a text file
   fs.writeFile(filePath, `
     RCC Elders Meeting Minutes
 
@@ -187,16 +202,18 @@ function saveForm() {
     if (err) {
       return console.error(err);
     }
-    alert(`Minutes saved to ${currentDate}${currentTime}RCCMinutes.txt`);
+    alert(`Minutes saved to ${filePath}`);
     isFormSaved = true;
     ipcRenderer.send('form-save-state', isFormSaved);
   });
 }
 
+// Load meeting minutes file
 function loadMinutes() {
   ipcRenderer.send('load-minutes');
 }
 
+// Display meeting minutes content
 ipcRenderer.on('display-minutes', (event, fileContent) => {
   const displayWindow = window.open('', 'Minutes Display', 'width=800,height=600');
   displayWindow.document.write('<pre>' + fileContent + '</pre>');
