@@ -51,27 +51,29 @@ function createMotionSection() {
   return section;
 }
 
-document.getElementById('addOldBusiness').addEventListener('click', () => {
-  document.getElementById('oldBusinessContainer').appendChild(createOldBusinessSection());
-  isFormSaved = false;
-  ipcRenderer.send('form-save-state', isFormSaved);
-});
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('addOldBusiness').addEventListener('click', () => {
+    document.getElementById('oldBusinessContainer').appendChild(createOldBusinessSection());
+    isFormSaved = false;
+    ipcRenderer.send('form-save-state', isFormSaved);
+  });
 
-document.getElementById('addNewBusiness').addEventListener('click', () => {
-  document.getElementById('newBusinessContainer').appendChild(createNewBusinessSection());
-  isFormSaved = false;
-  ipcRenderer.send('form-save-state', isFormSaved);
-});
+  document.getElementById('addNewBusiness').addEventListener('click', () => {
+    document.getElementById('newBusinessContainer').appendChild(createNewBusinessSection());
+    isFormSaved = false;
+    ipcRenderer.send('form-save-state', isFormSaved);
+  });
 
-document.getElementById('addMotion').addEventListener('click', () => {
-  document.getElementById('motionsContainer').appendChild(createMotionSection());
-  isFormSaved = false;
-  ipcRenderer.send('form-save-state', isFormSaved);
-});
+  document.getElementById('addMotion').addEventListener('click', () => {
+    document.getElementById('motionsContainer').appendChild(createMotionSection());
+    isFormSaved = false;
+    ipcRenderer.send('form-save-state', isFormSaved);
+  });
 
-document.getElementById('minutesForm').addEventListener('submit', (event) => {
-  event.preventDefault();
-  saveForm();
+  document.getElementById('minutesForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveForm();
+  });
 });
 
 function saveForm() {

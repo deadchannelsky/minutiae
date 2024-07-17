@@ -196,8 +196,6 @@
     <script src="renderer.js"></script>
   </div>
   <script>
-    const { ipcRenderer } = require('electron');
-
     function toggleMenu(menuId) {
       const menu = document.getElementById(menuId);
       menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
@@ -238,11 +236,6 @@
           menu.style.display = 'none';
         });
       }
-    });
-
-    ipcRenderer.on('display-minutes', (event, fileContent) => {
-      const displayWindow = window.open('', 'Minutes Display', 'width=800,height=600');
-      displayWindow.document.write('<pre>' + fileContent + '</pre>');
     });
   </script>
 </body>
