@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 let isFormSaved = false;
+let isQuitting = false;
 
 ipcMain.on('form-save-state', (event, state) => {
   isFormSaved = state;
@@ -50,7 +51,7 @@ function createWindow () {
   mainWindow.loadFile('index.html');
 
   mainWindow.on('close', (e) => {
-    if (!isFormSaved) {
+    if (!isFormSaved && !isQuitting) {
       e.preventDefault();
       const choice = dialog.showMessageBoxSync(mainWindow, {
         type: 'question',
@@ -60,9 +61,11 @@ function createWindow () {
       });
       if (choice === 0) {
         mainWindow.webContents.executeJavaScript('saveForm();', true).then(() => {
+          isQuitting = true;
           app.quit();
         });
       } else if (choice === 1) {
+        isQuitting = true;
         app.quit();
       }
     }
@@ -84,9 +87,10 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', (event) => {
-  const windows = BrowserWindow.getAllWindows();
-  if (windows.length > 0) {
+  if (!isQuitting) {
     event.preventDefault();
-    windows[0].close();
+    BrowserWindow.getAllWindows().forEach(window => {
+      window.close();
+    });
   }
 });
