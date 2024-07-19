@@ -21,6 +21,7 @@
 <body>
   <h1>Edit Minutes</h1>
   <div id="editor-container"></div>
+  <button id="save-button">Save as PDF</button>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -36,6 +37,11 @@
 
       ipcRenderer.on('load-file-content', (event, fileContent) => {
         quill.clipboard.dangerouslyPasteHTML(0, fileContent.replace(/\n/g, '<br>')); // Load file content
+      });
+
+      document.getElementById('save-button').addEventListener('click', () => {
+        const htmlContent = quill.root.innerHTML;
+        ipcRenderer.send('save-as-pdf', htmlContent);
       });
     });
   </script>

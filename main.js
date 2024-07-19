@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const pdf = require('html-pdf-node');
 
 let isFormSaved = false; // Flag to track if form is saved
 let isQuitting = false; // Flag to track if the app is quitting
@@ -80,6 +81,36 @@ ipcMain.on('save-settings', (event, newSettings) => {
   settings = newSettings;
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
 });
+
+// Save as PDF
+ipcMain.on('save-as-pdf', async (event, htmlContent) => {
+  const options = { format: 'A4' };
+  const filePath = getSaveFilePath();
+
+  const file = { content: htmlContent };
+  pdf.generatePdf(file, options).then(pdfBuffer => {
+    fs.writeFileSync(filePath, pdfBuffer);
+    dialog.showMessageBox({
+      type: 'info',
+      buttons: ['OK'],
+      title: 'PDF Saved',
+      message: `PDF saved to ${filePath}`
+    });
+  }).catch(err => {
+    dialog.showMessageBox({
+      type: 'error',
+      buttons: ['OK'],
+      title: 'Error',
+      message: `Failed to save PDF: ${err.message}`
+    });
+  });
+});
+
+function getSaveFilePath() {
+  const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const currentTime = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
+  return path.join(settings.pathToMinutes, `${currentDate}${currentTime}RCCMinutes.pdf`);
+}
 
 // Create main application window
 function createMainWindow() {
