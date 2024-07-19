@@ -1,13 +1,3 @@
-
-
-/* main.js: Manages the main application logic, including window creation, settings management, and inter-process communication.
-renderer.js: Handles the frontend logic for the meeting minutes form, including form handling, saving, and loading.
-index.html: The main HTML file for the application, containing the form structure and menu.
-settings.html: The settings page HTML file, with a form to manage application settings.
-splash.html: The splash screen HTML file shown at the application startup.
-settings.json: Configuration file for storing application settings. */
-
-
 const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -65,7 +55,7 @@ ipcMain.on('load-minutes', (event) => {
   if (fileSelection >= 0 && fileSelection < files.length) {
     const selectedFile = files[fileSelection];
     const fileContent = fs.readFileSync(path.join(minutesPath, selectedFile), 'utf-8');
-    event.sender.send('display-minutes', fileContent);
+    createMinutesWindow(fileContent);
   }
 });
 
@@ -102,12 +92,12 @@ function createMainWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: false
   });
 
-  mainWindow.setMenu(null); // Hide the menu bar
+  //mainWindow.setMenu(null); // Hide the menu bar
   mainWindow.loadFile('index.html');
-  mainWindow.removeMenu();
+  //mainWindow.removeMenu();
 
   // Handle window close event to check for unsaved changes
   mainWindow.on('close', (e) => {
@@ -142,10 +132,10 @@ function createSettingsWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: false
   });
 
-  settingsWindow.setMenu(null); // Hide the menu bar
+  //settingsWindow.setMenu(null); // Hide the menu bar
   settingsWindow.loadFile('settings.html');
 }
 
@@ -168,6 +158,29 @@ function createSplashWindow() {
     splashWindow.close();
     createMainWindow();
   }, 4000);
+}
+
+// Create a new window to display and edit minutes
+function createMinutesWindow(fileContent) {
+  const minutesWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    title: 'Edit Minutes',
+    webPreferences: {
+      preload: path.join(__dirname, 'renderer.js'),
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    autoHideMenuBar: false
+  });
+
+  //minutesWindow.setMenu(null); // Hide the menu bar
+  minutesWindow.loadFile('editor.html'); // Load the editor HTML file
+
+  // Send the file content to the editor window
+  minutesWindow.webContents.on('did-finish-load', () => {
+    minutesWindow.webContents.send('load-file-content', fileContent);
+  });
 }
 
 // App ready event to create splash window

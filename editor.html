@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Minutes</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    #editor-container {
+      height: 500px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Edit Minutes</h1>
+  <div id="editor-container"></div>
+  <button id="save-button">Save as RTF</button>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+    const { convertHtmlToRtf } = require('html-to-rtf');
+
+    let quill;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!quill) {
+        quill = new Quill('#editor-container', {
+          theme: 'snow'
+        });
+      }
+
+      ipcRenderer.on('load-file-content', (event, fileContent) => {
+        quill.clipboard.dangerouslyPasteHTML(0, fileContent.replace(/\n/g, '<br>')); // Load file content
+      });
+
+      document.getElementById('save-button').removeEventListener('click', saveAsRTF);
+      document.getElementById('save-button').addEventListener('click', saveAsRTF);
+    });
+
+    function saveAsRTF() {
+      const htmlContent = quill.root.innerHTML; // Get HTML content
+      const rtfContent = convertHtmlToRtf(htmlContent); // Convert HTML to RTF
+      const filePath = getSaveFilePath(); // Function to generate the new file path with .rtf extension
+      fs.writeFileSync(filePath, rtfContent); // Save RTF content to file
+      alert(`Formatted minutes saved to ${filePath}`);
+    }
+
+    // Function to generate file path with .rtf extension
+    function getSaveFilePath() {
+      const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const currentTime = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
+      const settingsPath = path.join(__dirname, 'settings.json');
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      return path.join(settings.pathToMinutes, `${currentDate}${currentTime}RCCMinutes.rtf`);
+    }
+  </script>
+</body>
+</html>

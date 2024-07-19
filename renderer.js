@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { convertHtmlToRtf } = require('html-to-rtf');
 
 // Load settings from settings file
 let settings = {};
@@ -12,6 +13,7 @@ if (fs.existsSync(settingsPath)) {
 }
 
 let isFormSaved = false; // Flag to track if form is saved
+let quill; // Quill editor instance
 
 // Create old business section for the meeting minutes form
 function createOldBusinessSection() {
@@ -65,32 +67,58 @@ function createMotionSection() {
 
 // DOM content loaded event listener to set up form event handlers
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('addOldBusiness').addEventListener('click', () => {
-    document.getElementById('oldBusinessContainer').appendChild(createOldBusinessSection());
-    isFormSaved = false;
-    ipcRenderer.send('form-save-state', isFormSaved);
-  });
+  console.log("DOM content loaded, setting up event listeners...");
 
-  document.getElementById('addNewBusiness').addEventListener('click', () => {
-    document.getElementById('newBusinessContainer').appendChild(createNewBusinessSection());
-    isFormSaved = false;
-    ipcRenderer.send('form-save-state', isFormSaved);
-  });
+  document.getElementById('addOldBusiness').removeEventListener('click', addOldBusinessHandler);
+  document.getElementById('addNewBusiness').removeEventListener('click', addNewBusinessHandler);
+  document.getElementById('addMotion').removeEventListener('click', addMotionHandler);
+  document.getElementById('minutesForm').removeEventListener('submit', submitFormHandler);
+  document.getElementById('save-button').removeEventListener('click', saveAsRTF);
 
-  document.getElementById('addMotion').addEventListener('click', () => {
-    document.getElementById('motionsContainer').appendChild(createMotionSection());
-    isFormSaved = false;
-    ipcRenderer.send('form-save-state', isFormSaved);
-  });
+  document.getElementById('addOldBusiness').addEventListener('click', addOldBusinessHandler);
+  document.getElementById('addNewBusiness').addEventListener('click', addNewBusinessHandler);
+  document.getElementById('addMotion').addEventListener('click', addMotionHandler);
+  document.getElementById('minutesForm').addEventListener('submit', submitFormHandler);
+  document.getElementById('save-button').addEventListener('click', saveAsRTF);
 
-  document.getElementById('minutesForm').addEventListener('submit', (event) => {
-    event.preventDefault();
-    saveForm();
-  });
+  if (!quill) {
+    quill = new Quill('#editor-container', {
+      theme: 'snow'
+    });
+    console.log("Quill editor initialized.");
+  }
 });
+
+// Event handler functions
+function addOldBusinessHandler() {
+  document.getElementById('oldBusinessContainer').appendChild(createOldBusinessSection());
+  isFormSaved = false;
+  ipcRenderer.send('form-save-state', isFormSaved);
+  console.log("Old business section added.");
+}
+
+function addNewBusinessHandler() {
+  document.getElementById('newBusinessContainer').appendChild(createNewBusinessSection());
+  isFormSaved = false;
+  ipcRenderer.send('form-save-state', isFormSaved);
+  console.log("New business section added.");
+}
+
+function addMotionHandler() {
+  document.getElementById('motionsContainer').appendChild(createMotionSection());
+  isFormSaved = false;
+  ipcRenderer.send('form-save-state', isFormSaved);
+  console.log("Motion section added.");
+}
+
+function submitFormHandler(event) {
+  event.preventDefault();
+  saveForm();
+}
 
 // Save the meeting minutes form data
 function saveForm() {
+  console.log("Saving form data...");
   const date = document.getElementById('date').value;
   const startTime = document.getElementById('startTime').value;
   const endTime = document.getElementById('endTime').value;
@@ -213,8 +241,59 @@ function loadMinutes() {
   ipcRenderer.send('load-minutes');
 }
 
-// Display meeting minutes content
+// Display meeting minutes content in Quill editor
 ipcRenderer.on('display-minutes', (event, fileContent) => {
-  const displayWindow = window.open('', 'Minutes Display', 'width=800,height=600');
-  displayWindow.document.write('<pre>' + fileContent + '</pre>');
+  quill.clipboard.dangerouslyPasteHTML(0, fileContent.replace(/\n/g, '<br>')); // Load file content
+  console.log("Minutes content loaded into Quill editor.");
 });
+
+// Function to save content as RTF
+function saveAsRTF() {
+  console.log("Save as RTF button clicked.");
+  if (!quill) {
+    console.error("Quill editor not initialized.");
+    return;
+  }
+
+  const htmlContent = quill.root.innerHTML; // Get HTML content
+  console.log("HTML content from Quill editor:", htmlContent);
+
+  const rtfContent = convertHtmlToRtf(htmlContent); // Convert HTML to RTF
+  console.log("Converted RTF content:", rtfContent);
+
+  const filePath = getSaveFilePath(); // Generate file path with .rtf extension
+  console.log("File path for saving RTF:", filePath);
+
+  fs.writeFileSync(filePath, rtfContent); // Save RTF content to file
+  console.log(`Formatted minutes saved to ${filePath}`);
+  alert(`Formatted minutes saved to ${filePath}`);
+}
+
+// Function to generate file path with .rtf extension
+function getSaveFilePath() {
+  const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const currentTime = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
+  return path.join(settings.pathToMinutes, `${currentDate}${currentTime}RCCMinutes.rtf`);
+}
+
+// Remove event listeners to prevent duplication
+document.getElementById('addOldBusiness').removeEventListener('click', addOldBusinessHandler);
+document.getElementById('addNewBusiness').removeEventListener('click', addNewBusinessHandler);
+document.getElementById('addMotion').removeEventListener('click', addMotionHandler);
+document.getElementById('minutesForm').removeEventListener('submit', submitFormHandler);
+document.getElementById('save-button').removeEventListener('click', saveAsRTF);
+
+// Add event listeners
+document.getElementById('addOldBusiness').addEventListener('click', addOldBusinessHandler);
+document.getElementById('addNewBusiness').addEventListener('click', addNewBusinessHandler);
+document.getElementById('addMotion').addEventListener('click', addMotionHandler);
+document.getElementById('minutesForm').addEventListener('submit', submitFormHandler);
+document.getElementById('save-button').addEventListener('click', saveAsRTF);
+
+// Initialize Quill editor
+if (!quill) {
+  quill = new Quill('#editor-container', {
+    theme: 'snow'
+  });
+  console.log("Quill editor initialized.");
+}

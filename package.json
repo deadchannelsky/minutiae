@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "main": "main.js",
   "dependencies": {
-    "electron": "^13.1.7"
-  }
+    "electron": "^31.2.1",
+    "html-to-rtf": "^2.1.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^15.4.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager ."
+  },
+  "author": "Your Name",
+  "license": "ISC"
 }
