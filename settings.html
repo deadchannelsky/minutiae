@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .setting {
+      margin-bottom: 15px;
+    }
+    .setting label {
+      display: block;
+      font-weight: bold;
+    }
+    .setting input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Settings</h1>
+  <form id="settingsForm">
+    <!-- Settings will be injected here by renderer.js -->
+  </form>
+  <button onclick="saveSettings()">Save</button>
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // Save the settings form data
+    function saveSettings() {
+      const settingsForm = document.getElementById('settingsForm');
+      const settings = {};
+      const inputs = settingsForm.querySelectorAll('input');
+      inputs.forEach(input => {
+        settings[input.name] = input.value;
+      });
+      ipcRenderer.send('save-settings', settings);
+    }
+
+    // Load settings from the main process and populate the form
+    ipcRenderer.on('load-settings', (event, settings) => {
+      const settingsForm = document.getElementById('settingsForm');
+      settingsForm.innerHTML = '';
+      for (const key in settings) {
+        if (settings.hasOwnProperty(key)) {
+          const settingDiv = document.createElement('div');
+          settingDiv.classList.add('setting');
+          settingDiv.innerHTML = `
+            <label for="${key}">${key}</label>
+            <input type="text" id="${key}" name="${key}" value="${settings[key]}">
+          `;
+          settingsForm.appendChild(settingDiv);
+        }
+      }
+    });
+
+    // Request settings from the main process when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      ipcRenderer.send('request-settings');
+    });
+  </script>
+</body>
+</html>
