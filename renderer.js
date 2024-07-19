@@ -1,7 +1,6 @@
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { convertHtmlToRtf } = require('html-to-rtf');
 
 // Load settings from settings file
 let settings = {};
@@ -65,29 +64,28 @@ function createMotionSection() {
   return section;
 }
 
-// DOM content loaded event listener to set up form event handlers
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM content loaded, setting up event listeners...");
-
+// Function to initialize event listeners and Quill editor
+function initialize() {
+  // Remove existing event listeners
   document.getElementById('addOldBusiness').removeEventListener('click', addOldBusinessHandler);
   document.getElementById('addNewBusiness').removeEventListener('click', addNewBusinessHandler);
   document.getElementById('addMotion').removeEventListener('click', addMotionHandler);
   document.getElementById('minutesForm').removeEventListener('submit', submitFormHandler);
-  document.getElementById('save-button').removeEventListener('click', saveAsRTF);
 
+  // Add event listeners
   document.getElementById('addOldBusiness').addEventListener('click', addOldBusinessHandler);
   document.getElementById('addNewBusiness').addEventListener('click', addNewBusinessHandler);
   document.getElementById('addMotion').addEventListener('click', addMotionHandler);
   document.getElementById('minutesForm').addEventListener('submit', submitFormHandler);
-  document.getElementById('save-button').addEventListener('click', saveAsRTF);
 
+  // Initialize Quill editor
   if (!quill) {
     quill = new Quill('#editor-container', {
       theme: 'snow'
     });
     console.log("Quill editor initialized.");
   }
-});
+}
 
 // Event handler functions
 function addOldBusinessHandler() {
@@ -247,53 +245,5 @@ ipcRenderer.on('display-minutes', (event, fileContent) => {
   console.log("Minutes content loaded into Quill editor.");
 });
 
-// Function to save content as RTF
-function saveAsRTF() {
-  console.log("Save as RTF button clicked.");
-  if (!quill) {
-    console.error("Quill editor not initialized.");
-    return;
-  }
-
-  const htmlContent = quill.root.innerHTML; // Get HTML content
-  console.log("HTML content from Quill editor:", htmlContent);
-
-  const rtfContent = convertHtmlToRtf(htmlContent); // Convert HTML to RTF
-  console.log("Converted RTF content:", rtfContent);
-
-  const filePath = getSaveFilePath(); // Generate file path with .rtf extension
-  console.log("File path for saving RTF:", filePath);
-
-  fs.writeFileSync(filePath, rtfContent); // Save RTF content to file
-  console.log(`Formatted minutes saved to ${filePath}`);
-  alert(`Formatted minutes saved to ${filePath}`);
-}
-
-// Function to generate file path with .rtf extension
-function getSaveFilePath() {
-  const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const currentTime = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
-  return path.join(settings.pathToMinutes, `${currentDate}${currentTime}RCCMinutes.rtf`);
-}
-
-// Remove event listeners to prevent duplication
-document.getElementById('addOldBusiness').removeEventListener('click', addOldBusinessHandler);
-document.getElementById('addNewBusiness').removeEventListener('click', addNewBusinessHandler);
-document.getElementById('addMotion').removeEventListener('click', addMotionHandler);
-document.getElementById('minutesForm').removeEventListener('submit', submitFormHandler);
-document.getElementById('save-button').removeEventListener('click', saveAsRTF);
-
-// Add event listeners
-document.getElementById('addOldBusiness').addEventListener('click', addOldBusinessHandler);
-document.getElementById('addNewBusiness').addEventListener('click', addNewBusinessHandler);
-document.getElementById('addMotion').addEventListener('click', addMotionHandler);
-document.getElementById('minutesForm').addEventListener('submit', submitFormHandler);
-document.getElementById('save-button').addEventListener('click', saveAsRTF);
-
-// Initialize Quill editor
-if (!quill) {
-  quill = new Quill('#editor-container', {
-    theme: 'snow'
-  });
-  console.log("Quill editor initialized.");
-}
+// Initialize event listeners and Quill editor
+document.addEventListener('DOMContentLoaded', initialize);
