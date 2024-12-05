@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minutiae: The Simple Meeting Minutes Helper</title>
+  <link rel="stylesheet" href="./styles.css">
+  <!-- Include Quill Library -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+</head>
+<body>
+  <div class="ribbon">
+    <div class="menu-item" onclick="toggleMenu('fileMenu')">File
+      <div id="fileMenu" class="submenu">
+        <div class="submenu-item" onclick="saveMinutes()">Save Minutes</div>
+        <div class="submenu-item" onclick="loadMinutes()">Load Minutes</div>
+        <div class="submenu-item" onclick="exitApplication()">Exit Minutiae</div>
+        <div class="submenu-item" onclick="openSettings()">Settings</div>
+      </div>
+    </div>
+    <div class="menu-item" onclick="toggleMenu('activitiesMenu')">Activities
+      <div id="activitiesMenu" class="submenu">
+        <div class="submenu-item" onclick="activity1()">Activity 1</div>
+        <div class="submenu-item" onclick="activity2()">Activity 2</div>
+      </div>
+    </div>
+    <div class="menu-item" onclick="toggleMenu('helpMenu')">Help
+      <div id="helpMenu" class="submenu">
+        <div class="submenu-item" onclick="helpDocument()">Help Document</div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <h1 id="orgName">Organization Meeting Minutes</h1>
+    <form id="minutesForm">
+      <div class="date-time-container">
+        <div class="section">
+          <label for="date">Date:</label>
+          <input type="date" id="date" name="date"><br>
+        </div>
+        <div class="section">
+          <label for="startTime">Start Time:</label>
+          <input type="time" id="startTime" name="startTime"><br>
+        </div>
+        <div class="section">
+          <label for="endTime">End Time:</label>
+          <input type="time" id="endTime" name="endTime"><br>
+        </div>
+      </div>
+      <div class="section">
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location"><br>
+      </div>
+      <div class="section">
+        <h2>Attendance</h2>
+        <label for="present">Present:</label>
+        <textarea id="present" name="present"></textarea><br>
+      </div>
+      <div class="section">
+        <label for="absent">Absent:</label>
+        <textarea id="absent" name="absent"></textarea><br>
+      </div>
+      <div class="section">
+        <h2>Reports</h2>
+        <div class="reports-container">
+          <div class="subsection">
+            <h3>Treasurer's Report</h3>
+            <label for="treasurerPresenter">Presenter:</label>
+            <input type="text" id="treasurerPresenter" name="treasurerPresenter"><br>
+            <label for="treasurerSummary">Summary:</label>
+            <textarea id="treasurerSummary" name="treasurerSummary"></textarea><br>
+            <label for="treasurerKeyPoints">Key Points:</label>
+            <textarea id="treasurerKeyPoints" name="treasurerKeyPoints"></textarea><br>
+          </div>
+          <div class="subsection">
+            <h3>Elders Report</h3>
+            <label for="eldersPresenter">Presenter:</label>
+            <input type="text" id="eldersPresenter" name="eldersPresenter"><br>
+            <label for="eldersSummary">Summary:</label>
+            <textarea id="eldersSummary" name="eldersSummary"></textarea><br>
+            <label for="eldersKeyPoints">Key Points:</label>
+            <textarea id="eldersKeyPoints" name="eldersKeyPoints"></textarea><br>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Old Business</h2>
+        <div id="oldBusinessContainer">
+          <div class="subsection">
+            <label for="oldDescription">Description:</label>
+            <textarea name="oldDescription"></textarea><br>
+            <label for="oldDecision">Decision:</label>
+            <textarea name="oldDecision"></textarea><br>
+          </div>
+        </div>
+        <button type="button" id="addOldBusiness">Add Old Business</button>
+      </div>
+      <div class="section">
+        <h2>New Business</h2>
+        <div id="newBusinessContainer">
+          <div class="subsection">
+            <label for="newDescription">Description:</label>
+            <textarea name="newDescription"></textarea><br>
+            <label for="newDecision">Decision:</label>
+            <textarea name="newDecision"></textarea><br>
+          </div>
+        </div>
+        <button type="button" id="addNewBusiness">Add New Business</button>
+      </div>
+      <div class="section">
+        <h2>Other Business</h2>
+        <label for="announcements">Announcements:</label>
+        <textarea id="announcements" name="announcements"></textarea><br>
+      </div>
+      <div class="section">
+        <label for="nextMeeting">Next Meeting Date:</label>
+        <input type="date" id="nextMeeting" name="nextMeeting"><br>
+      </div>
+      <div class="section">
+        <h2>Motions</h2>
+        <div id="motionsContainer">
+          <div class="subsection">
+            <label for="motion">Motion:</label>
+            <input type="text" name="motion"><br>
+            <label for="mover">Mover:</label>
+            <input type="text" name="mover"><br>
+            <label for="second">Second:</label>
+            <input type="text" name="second"><br>
+            <label for="description">Description:</label>
+            <textarea name="description"></textarea><br>
+            <label for="notes">Notes:</label>
+            <textarea name="notes"></textarea><br>
+            <label for="status">Status:</label>
+            <select name="status">
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select><br>
+          </div>
+        </div>
+        <button type="button" id="addMotion">Add Motion</button>
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+
+    <script src="renderer.js"></script>
+  </div>
+  <script>
+    // Toggle the display of the submenu
+    function toggleMenu(menuId) {
+      const menu = document.getElementById(menuId);
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Submit the minutes form to save the data
+    function saveMinutes() {
+      document.getElementById('minutesForm').submit();
+    }
+
+    // Load the minutes from the specified path
+    function loadMinutes() {
+      ipcRenderer.send('load-minutes');
+    }
+
+    // Exit the application
+    function exitApplication() {
+      ipcRenderer.send('exit-application');
+    }
+
+    // Open the settings window
+    function openSettings() {
+      ipcRenderer.send('open-settings');
+    }
+
+    // Placeholder for Activity 1 functionality
+    function activity1() {
+      alert('Activity 1 clicked');
+      // Implement Activity 1 functionality
+    }
+
+    // Placeholder for Activity 2 functionality
+    function activity2() {
+      alert('Activity 2 clicked');
+      // Implement Activity 2 functionality
+    }
+
+    // Placeholder for Help Document functionality
+    function helpDocument() {
+      alert('Help Document clicked');
+      // Implement Help Document functionality
+    }
+
+    // Close all submenus when clicking outside
+    document.addEventListener('click', (event) => {
+      const isClickInsideMenu = event.target.closest('.menu-item');
+      if (!isClickInsideMenu) {
+        document.querySelectorAll('.submenu').forEach((menu) => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+
+    // Load OrgName from settings.json and update the h1 tag
+    document.addEventListener('DOMContentLoaded', () => {
+      const { ipcRenderer } = require('electron');
+      const fs = require('fs');
+      const path = require('path');
+
+      const settingsPath = path.join(__dirname, 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        const orgNameElement = document.getElementById('orgName');
+        orgNameElement.textContent = `${settings.OrgName} Meeting Minutes`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "my-electron-app",
+  "version": "1.0.0",
+  "main": "main.js",
+  "dependencies": {
+    "electron": "^31.2.1",
+    "html-pdf-node": "^1.0.8",
+    "html-to-rtf": "^2.1.0",
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "electron-packager": "^15.4.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager ."
+  },
+  "author": "Your Name",
+  "license": "ISC"
+}
